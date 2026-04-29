@@ -114,14 +114,26 @@ async function updateTargetLocation(name) {
 // ─── Settings Logic ─────────────────────────
 async function initSettingsPage() {
     const lightToggle = document.getElementById('toggle-light-mode');
-    if (!lightToggle || !window.GlideGoDB) return;
+    const gpsSelect = document.getElementById('select-gps-source');
+    if (!window.GlideGoDB) return;
 
-    const config = await GlideGoDB.get(STORES.SETTINGS, 'app_config');
-    lightToggle.checked = !!config?.lightMode;
+    const config = await GlideGoDB.get(STORES.SETTINGS, 'app_config') || {};
+    
+    if (lightToggle) {
+        lightToggle.checked = !!config.lightMode;
+        lightToggle.addEventListener('change', (e) => {
+            toggleTheme(e.target.checked);
+        });
+    }
 
-    lightToggle.addEventListener('change', (e) => {
-        toggleTheme(e.target.checked);
-    });
+    if (gpsSelect) {
+        gpsSelect.value = config.gpsSource || 'hardware';
+        gpsSelect.addEventListener('change', async (e) => {
+            config.gpsSource = e.target.value;
+            await GlideGoDB.put(STORES.SETTINGS, { ...config, key: 'app_config' });
+            showToast(`GPS Source set to ${e.target.value}`, 'success');
+        });
+    }
 }
 
 async function refreshDashboard() {

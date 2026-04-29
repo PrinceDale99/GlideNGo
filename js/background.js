@@ -31,6 +31,13 @@ const BackgroundGPS = {
       synced: false
     };
     await GlideGoDB.put(STORES.GPS_LOGS, point);
+    
+    // If setting is "device" GPS, update active delivery
+    const config = await GlideGoDB.get(STORES.SETTINGS, 'app_config');
+    if (config?.gpsSource === 'device') {
+        await GlideGoHardware._handleHardwareUpdate({ lat: point.lat, lng: point.lng });
+    }
+
     this._updateLiveDisplay(point);
     if (navigator.onLine) await BackgroundSync.flush();
   },
