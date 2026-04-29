@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="TRAXHAUL Settings — Configure driver profile, offline maps, notifications, and sync preferences.">
+  <title>TRAXHAUL | Settings</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0D1117">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    .toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 10px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all 0.25s ease; z-index: 999; white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+    .toast.toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.toast-success { border-color: var(--success); color: var(--success); }
+
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row label { cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<header class="top-bar">
+  <a href="index.html" class="back-btn">←</a>
+  <div class="page-title">Settings</div>
+  <div class="connection-pill pill-online" id="conn-pill">Online</div>
+</header>
+
+<main class="container" style="padding-top:16px;">
+
+  <!-- ── DRIVER PROFILE ── -->
+  <section class="card mb-16">
+    <div class="flex items-center gap-16">
+      <div style="
+        width:56px;height:56px;
+        background:var(--primary);
+        border-radius:50%;
+        display:flex;align-items:center;justify-content:center;
+        font-size:22px;font-weight:900;color:white;
+        flex-shrink:0;
+      ">JD</div>
+      <div style="flex:1;">
+        <div style="font-size:18px;font-weight:800;">Juan dela Cruz</div>
+        <div class="t-xs t-muted mt-4">License: #N01-24-004291</div>
+        <div class="t-xs t-muted">Truck: ABC 1234 · Isuzu Giga</div>
+      </div>
+      <button class="btn btn-ghost btn-sm">Edit</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center;">
+      <div>
+        <div style="font-size:20px;font-weight:900;color:var(--primary);">847</div>
+        <div class="t-xs t-muted mt-4">KM Today</div>
+      </div>
+      <div>
+        <div style="font-size:20px;font-weight:900;color:var(--text);">5h</div>
+        <div class="t-xs t-muted mt-4">Drive Time</div>
+      </div>
+      <div>
+        <div style="font-size:20px;font-weight:900;color:var(--success);">98%</div>
+        <div class="t-xs t-muted mt-4">On-Time Rate</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CARGO DEFAULTS ── -->
+  <div class="section-label">Cargo Defaults</div>
+  <div class="card mb-16">
+    <div class="settings-row">
+      <div>
+        <div class="t-small" style="font-weight:700;">Default Cargo Type</div>
+        <div class="t-xs t-muted mt-4">Used when starting a new trip</div>
+      </div>
+      <select class="input" style="width:auto;min-width:130px;font-size:12px;">
+        <option>Perishable (Cold)</option>
+        <option>Perishable (Frozen)</option>
+        <option>General Cargo</option>
+        <option>Fragile</option>
+        <option>Hazmat Class 3</option>
+        <option>Livestock</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="t-small" style="font-weight:700;">Temperature Alert Threshold</div>
+        <div class="t-xs t-muted mt-4">Alert when cargo temp exceeds</div>
+      </div>
+      <select class="input" style="width:auto;min-width:130px;font-size:12px;">
+        <option>8°C (Cold Chain)</option>
+        <option>-18°C (Frozen)</option>
+        <option>25°C (General)</option>
+        <option>Custom…</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── OFFLINE MAPS ── -->
+  <div class="section-label">Offline Maps</div>
+  <div class="card mb-16">
+    <div class="settings-row">
+      <div style="flex:1;">
+        <div class="t-small" style="font-weight:700;">Stored Map Data</div>
+        <div class="storage-bar" style="margin-top:8px;">
+          <div class="storage-fill" style="width:62%;"></div>
+        </div>
+        <div class="t-xs t-muted mt-4">1.24 GB / 2 GB used — Luzon · Visayas · Mindanao</div>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="t-small" style="font-weight:700;">Last Map Update</div>
+      <div class="t-xs t-muted">April 28, 2026</div>
+    </div>
+    <div class="settings-row" style="border:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;">
+        <button class="btn btn-ghost btn-sm" onclick="showToast('Checking for map updates...','success')">Check Updates</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="confirmClear()">Clear Cache</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NOTIFICATIONS ── -->
+  <div class="section-label">Notifications</div>
+  <div class="card mb-16">
+    <div class="toggle-wrap">
+      <div>
+        <div class="t-small" style="font-weight:700;">Rest Reminders</div>
+        <div class="t-xs t-muted mt-4">Alert after 4.5h continuous driving</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="toggle-wrap">
+      <div>
+        <div class="t-small" style="font-weight:700;">Temperature Alerts</div>
+        <div class="t-xs t-muted mt-4">Alert when cargo exceeds threshold</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="toggle-wrap">
+      <div>
+        <div class="t-small" style="font-weight:700;">Traffic & Reroute Alerts</div>
+        <div class="t-xs t-muted mt-4">Notify on route changes</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="toggle-wrap">
+      <div>
+        <div class="t-small" style="font-weight:700;">Checkpoint Reminders</div>
+        <div class="t-xs t-muted mt-4">Alert 5 km before toll gates</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="toggle-wrap">
+      <div>
+        <div class="t-small" style="font-weight:700;">Voice Navigation (Filipino)</div>
+        <div class="t-xs t-muted mt-4">Turn-by-turn in Tagalog</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- ── SYNC ── -->
+  <div class="section-label">Data Sync</div>
+  <div class="card mb-16">
+    <div class="settings-row">
+      <div>
+        <div class="t-small" style="font-weight:700;">Last Synced</div>
+        <div class="t-xs t-muted mt-4">Today, 2:14 PM · 24 GPS logs uploaded</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="manualSync()">Sync Now</button>
+    </div>
+    <div class="toggle-wrap">
+      <div>
+        <div class="t-small" style="font-weight:700;">Auto-Sync When Online</div>
+        <div class="t-xs t-muted mt-4">Upload queued data on reconnect</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="toggle-wrap">
+      <div>
+        <div class="t-small" style="font-weight:700;">Background Location</div>
+        <div class="t-xs t-muted mt-4">Continue tracking when app is minimized</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- ── ABOUT ── -->
+  <div class="section-label">About</div>
+  <div class="card mb-16">
+    <div class="settings-row">
+      <div class="t-small" style="font-weight:700;">App Version</div>
+      <div class="t-small t-muted">v1.0.42 (Beta)</div>
+    </div>
+    <div class="settings-row">
+      <div class="t-small" style="font-weight:700;">Device ID</div>
+      <div class="t-small t-muted" style="font-family:monospace;font-size:12px;">TXH-PH-00419</div>
+    </div>
+    <div class="settings-row">
+      <div class="t-small" style="font-weight:700;">Map Data Version</div>
+      <div class="t-small t-muted">PH-OSM-2024.04</div>
+    </div>
+    <div class="settings-row">
+      <div class="t-small" style="font-weight:700;">Subsctiption</div>
+      <div class="badge badge-primary" style="font-size:10px;">Fleet Tier</div>
+    </div>
+  </div>
+
+  <div style="height:20px;"></div>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-item"><span class="nav-ico">🏠</span><span>Home</span></a>
+  <a href="map.html" class="nav-item"><span class="nav-ico">🗺️</span><span>Map</span></a>
+  <a href="stops.html" class="nav-item"><span class="nav-ico">⛽</span><span>Stops</span></a>
+  <a href="cargo.html" class="nav-item"><span class="nav-ico">📦</span><span>Cargo</span></a>
+  <a href="settings.html" class="nav-item active"><span class="nav-ico">⚙️</span><span>Settings</span></a>
+</nav>
+
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+<script>
+  function manualSync() {
+    const pill = document.getElementById('conn-pill');
+    if (navigator.onLine) {
+      SyncQueue.add({ type: 'manual_sync' });
+      showToast('Sync started...', 'success');
+    } else {
+      showToast('No connection — data queued for sync');
+    }
+  }
+
+  function confirmClear() {
+    if (confirm('Clear all cached offline map data?\nYou will need an internet connection to re-download.')) {
+      showToast('Map cache cleared', 'success');
+    }
+  }
+</script>
+</body>
+</html>

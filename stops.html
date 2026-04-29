@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="GLIDEN'GO Stops — View upcoming gas stations, rest areas, and checkpoints on your route.">
+  <title>GLIDEN'GO | Stops Ahead</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0D1117">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    .toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 10px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all 0.25s ease; z-index: 999; white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+    .toast.toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.toast-success { border-color: var(--success); color: var(--success); }
+    .stop-card { animation-delay: calc(var(--i) * 0.06s); }
+  </style>
+</head>
+<body>
+
+<header class="top-bar">
+  <a href="index.html" class="back-btn">←</a>
+  <div class="page-title">Stops Ahead</div>
+  <div class="connection-pill pill-online" id="conn-pill">Online</div>
+</header>
+
+<main class="container" style="padding-top:16px;">
+
+  <!-- Filter Tabs -->
+  <div class="filter-row">
+    <div class="filter-pill active" data-filter="all">All</div>
+    <div class="filter-pill" data-filter="gas">Gas ⛽</div>
+    <div class="filter-pill" data-filter="rest">Rest 🛏</div>
+    <div class="filter-pill" data-filter="checkpoint">Checkpoint 🔵</div>
+  </div>
+
+  <!-- Route Strip Visualization -->
+  <div class="route-strip">
+    <div class="route-strip-truck" style="left:0;">
+      <div class="route-strip-label" style="left:50%;">You</div>
+    </div>
+    <div class="route-strip-stop" style="left:22%;">
+      <div class="route-strip-label">Petron</div>
+    </div>
+    <div class="route-strip-stop" style="left:38%;background:var(--secondary);">
+      <div class="route-strip-label">Shell</div>
+    </div>
+    <div class="route-strip-stop" style="left:55%;background:var(--success);">
+      <div class="route-strip-label">Rest</div>
+    </div>
+    <div class="route-strip-stop" style="left:70%;background:var(--muted);">
+      <div class="route-strip-label">Toll</div>
+    </div>
+    <div class="route-strip-dest">
+      <div class="route-strip-label" style="right:0;transform:none;">Davao</div>
+    </div>
+  </div>
+
+  <!-- GLIDE-SYNC Recommendation Banner -->
+  <div style="
+    background: var(--secondary-dim);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  ">
+    <span style="font-size:20px;">⚡</span>
+    <div>
+      <div style="font-size:12px;font-weight:800;color:var(--secondary);text-transform:uppercase;letter-spacing:.05em;">GLIDE-SYNC Recommendation</div>
+      <div class="t-small" style="margin-top:2px;">Stop at Shell Alabang — driver approaching 5h driving limit</div>
+    </div>
+  </div>
+
+  <!-- Stop Cards -->
+
+  <div class="stop-card stop-card--recommended" data-type="gas" style="--i:0;">
+    <div class="stop-icon-circle stop-icon--gas">⛽</div>
+    <div style="flex:1;">
+      <div class="flex justify-between items-start">
+        <div>
+          <div class="t-h3">Petron Station — SLEX</div>
+          <div class="badge badge-secondary" style="margin-top:4px;font-size:9px;">RECOMMENDED</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="stop-distance">18 km</div>
+          <div class="t-xs t-muted">22 min</div>
+        </div>
+      </div>
+      <div class="amenity-row">
+        <span class="amenity-tag">24/7</span>
+        <span class="amenity-tag" style="background:var(--secondary-dim);border-color:var(--secondary);">Convenience Store</span>
+        <span class="amenity-tag">Toilet</span>
+        <span class="amenity-tag">Food</span>
+        <span class="amenity-tag">Parking</span>
+      </div>
+      <button class="btn btn-primary btn-sm btn-block" onclick="setStop('Petron Station — SLEX')">Set as Stop</button>
+    </div>
+  </div>
+
+  <div class="stop-card" data-type="gas" style="--i:1;">
+    <div class="stop-icon-circle stop-icon--gas">⛽</div>
+    <div style="flex:1;">
+      <div class="flex justify-between items-start">
+        <div class="t-h3">Shell Alabang Southbound</div>
+        <div style="text-align:right;">
+          <div class="stop-distance">31 km</div>
+          <div class="t-xs t-muted">38 min</div>
+        </div>
+      </div>
+      <div class="amenity-row">
+        <span class="amenity-tag">24/7</span>
+        <span class="amenity-tag" style="background:var(--secondary-dim);border-color:var(--secondary);">Convenience Store</span>
+        <span class="amenity-tag">Toilet</span>
+        <span class="amenity-tag">Shower</span>
+        <span class="amenity-tag">WiFi</span>
+      </div>
+      <button class="btn btn-ghost btn-sm btn-block" onclick="setStop('Shell Alabang Southbound')">Set as Stop</button>
+    </div>
+  </div>
+
+  <div class="stop-card" data-type="rest" style="--i:2;">
+    <div class="stop-icon-circle stop-icon--rest">🛏</div>
+    <div style="flex:1;">
+      <div class="flex justify-between items-start">
+        <div class="t-h3">Sto. Tomas Rest Area</div>
+        <div style="text-align:right;">
+          <div class="stop-distance" style="color:var(--secondary);">52 km</div>
+          <div class="t-xs t-muted">1h 05m</div>
+        </div>
+      </div>
+      <div class="t-xs t-muted" style="margin:4px 0 8px;">Batangas · Truck-safe · Height clearance: 4.5m</div>
+      <div class="amenity-row">
+        <span class="amenity-tag">Shower</span>
+        <span class="amenity-tag">Lounge</span>
+        <span class="amenity-tag">24/7</span>
+        <span class="amenity-tag">Security</span>
+        <span class="amenity-tag">Canteen</span>
+      </div>
+      <button class="btn btn-ghost btn-sm btn-block" onclick="setStop('Sto. Tomas Rest Area')">Set as Stop</button>
+    </div>
+  </div>
+
+  <div class="stop-card" data-type="checkpoint" style="--i:3;">
+    <div class="stop-icon-circle stop-icon--chk">🔵</div>
+    <div style="flex:1;">
+      <div class="flex justify-between items-start">
+        <div class="t-h3">SLEX Toll Gate — Km 42</div>
+        <div style="text-align:right;">
+          <div class="stop-distance" style="color:var(--success);">42 km</div>
+          <div class="t-xs t-muted">52 min</div>
+        </div>
+      </div>
+      <div class="t-xs t-muted" style="margin:4px 0 8px;">Mandatory stop — cargo inspection checkpoint</div>
+      <div class="amenity-row">
+        <span class="amenity-tag">Inspection</span>
+        <span class="amenity-tag">Toll ₱245</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stop-card" data-type="gas" style="--i:4;">
+    <div class="stop-icon-circle stop-icon--gas">⛽</div>
+    <div style="flex:1;">
+      <div class="flex justify-between items-start">
+        <div class="t-h3">Phoenix Petroleum — Tiaong</div>
+        <div style="text-align:right;">
+          <div class="stop-distance">89 km</div>
+          <div class="t-xs t-muted">1h 42m</div>
+        </div>
+      </div>
+      <div class="amenity-row">
+        <span class="amenity-tag">24/7</span>
+        <span class="amenity-tag">Toilet</span>
+        <span class="amenity-tag">Food</span>
+      </div>
+      <button class="btn btn-ghost btn-sm btn-block" onclick="setStop('Phoenix Petroleum — Tiaong')">Set as Stop</button>
+    </div>
+  </div>
+
+  <div class="stop-card" data-type="gas" style="--i:5;">
+    <div class="stop-icon-circle stop-icon--gas">⛽</div>
+    <div style="flex:1;">
+      <div class="flex justify-between items-start">
+        <div class="t-h3">Caltex — Lucena City</div>
+        <div style="text-align:right;">
+          <div class="stop-distance">118 km</div>
+          <div class="t-xs t-muted">2h 18m</div>
+        </div>
+      </div>
+      <div class="amenity-row">
+        <span class="amenity-tag">24/7</span>
+        <span class="amenity-tag" style="background:var(--secondary-dim);border-color:var(--secondary);">Convenience Store</span>
+        <span class="amenity-tag">Toilet</span>
+        <span class="amenity-tag">Parking</span>
+      </div>
+      <button class="btn btn-ghost btn-sm btn-block" onclick="setStop('Caltex — Lucena City')">Set as Stop</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-item">
+    <span class="nav-ico">🏠</span><span>Home</span>
+  </a>
+  <a href="map.html" class="nav-item">
+    <span class="nav-ico">🗺️</span><span>Map</span>
+  </a>
+  <a href="stops.html" class="nav-item active">
+    <span class="nav-ico">⛽</span><span>Stops</span>
+  </a>
+  <a href="cargo.html" class="nav-item">
+    <span class="nav-ico">📦</span><span>Cargo</span>
+  </a>
+  <a href="settings.html" class="nav-item">
+    <span class="nav-ico">⚙️</span><span>Settings</span>
+  </a>
+</nav>
+
+<script src="js/db.js"></script>
+<script src="js/background.js"></script>
+<script src="js/app.js"></script>
+<script>
+  function setStop(name) {
+    showToast(`Stop set: ${name}`, 'success');
+    if (window.GlideGoHardware) {
+        GlideGoHardware.sendAlert('GAS_STATION_AHEAD');
+    }
+  }
+</script>
+</body>
+</html>

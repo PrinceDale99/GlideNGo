@@ -1,0 +1,33 @@
+{
+  "name": "GlideN'Go — Fleet GPS",
+  "short_name": "GlideN'Go",
+  "description": "Real-time cargo delivery tracking and route management for Philippine truckers.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0D1117",
+  "theme_color": "#0D1117",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%230D1117'/%3E%3Ctext x='96' y='130' font-size='110' text-anchor='middle' font-family='Arial Black,sans-serif' fill='%233B82F6'%3EG%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["navigation", "utilities", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Navigate",
+      "url": "./map.html",
+      "description": "Open navigation view"
+    },
+    {
+      "name": "Stops",
+      "url": "./stops.html",
+      "description": "View nearby stops"
+    }
+  ]
+}

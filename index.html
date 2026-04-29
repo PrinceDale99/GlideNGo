@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="GLIDEN'GO — Real-time cargo delivery tracking and route management for Philippine truckers.">
+  <title>GLIDEN'GO | Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0D1117">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    .toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 10px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all 0.25s ease; z-index: 999; white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+    .toast.toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.toast-success { border-color: var(--success); color: var(--success); }
+    .toast.toast-info    { border-color: var(--secondary); color: var(--secondary); }
+    .toast.toast-warning { border-color: var(--warning); color: var(--warning); }
+
+    /* AI Panel */
+    .ai-loading { display:flex;align-items:center;gap:10px;padding:20px; }
+    .ai-spinner {
+      width:16px;height:16px;
+      border:2px solid var(--border);
+      border-top-color:var(--secondary);
+      border-radius:50%;
+      animation:spin .8s linear infinite;
+    }
+
+    /* Hardware badge */
+    #hw-status-badge {
+      font-size:9px;font-weight:800;
+      color:var(--secondary);
+      background:var(--secondary-dim);
+      border:1px solid rgba(59,130,246,0.25);
+      padding:3px 8px;border-radius:20px;
+      letter-spacing:.04em;
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="top-bar">
+  <div class="logo">GLIDE<em>N'GO</em></div>
+  <div class="flex items-center gap-8">
+    <span id="hw-status-badge">● Node Connected</span>
+    <div class="connection-pill pill-online" id="conn-pill">Online</div>
+  </div>
+</header>
+
+<main class="container" style="padding-top:16px;">
+
+  <!-- ── ACTIVE DELIVERY CARD (USER & DRIVER FOCUS) ── -->
+  <section class="delivery-card mb-16">
+    <div class="flex justify-between items-center mb-12">
+      <div class="t-label" style="margin:0;">Active Delivery</div>
+      <div class="badge badge-success" style="font-size:10px;">● ON TIME</div>
+    </div>
+    
+    <div class="route-title">
+      <span id="dash-origin">Laguna</span> <span class="route-arrow">→</span> <span id="dash-dest">Davao</span>
+    </div>
+
+    <div class="flex items-center justify-between">
+      <div>
+        <div style="margin-bottom:12px;">
+          <div class="t-xs t-muted">Estimated Arrival</div>
+          <div style="font-size:24px;font-weight:900;color:var(--text);" id="eta-value">--h --m</div>
+        </div>
+
+        <div class="flex items-center gap-8" style="margin-bottom:8px;">
+          <span id="dash-cargo-icon" style="font-size:18px;">❄️</span>
+          <span class="t-small" style="font-weight:600;" id="dash-cargo-type">Perishable Cargo</span>
+        </div>
+
+        <div class="flex items-center gap-8" style="margin-bottom:8px;">
+          <span style="font-size:18px;">👤</span>
+          <span class="t-small" style="font-weight:600;"><span id="dash-driver">Glide Master Juan</span> <span class="t-muted">/ <span id="dash-assistant">Kiko (Pahinante)</span></span></span>
+        </div>
+
+        <div class="flex items-center gap-8">
+          <span style="font-size:18px;">🚛</span>
+          <span class="t-small t-muted">Plate: <strong style="color:var(--text);" id="dash-plate">GNG 2024</strong></span>
+        </div>
+      </div>
+
+      <!-- Cargo Health (User View) -->
+      <div class="ttl-ring-wrap ring-small">
+        <svg width="88" height="88" viewBox="0 0 88 88">
+          <circle class="ring-bg" cx="44" cy="44" r="36" stroke-width="7"/>
+          <circle class="ring-fg" id="dash-ttl-circle" cx="44" cy="44" r="36" stroke="#F97316" stroke-width="7"
+                  stroke-dasharray="226" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ttl-ring-label">
+          <div style="font-size:16px;font-weight:900;line-height:1;" id="dash-ttl-percent">--%</div>
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.06em;margin-top:2px;">Cargo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trip progress bar (User Focus) -->
+    <div style="margin-top:20px;">
+      <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:8px;">
+        <div id="dash-progress-bar" style="height:100%;width:0%;background:var(--primary);border-radius:3px;transition:width 1s ease;"></div>
+      </div>
+      <div class="flex justify-between t-xs t-muted">
+        <span id="dash-progress-text">Calculating distance...</span>
+        <span id="live-coords" style="font-family:monospace;">--.----, --.----</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── QUICK ACTIONS (DRIVER FOCUS) ── -->
+  <nav class="quick-grid">
+    <a href="map.html" class="action-tile">
+      <div class="action-icon action-icon--orange">🗺️</div>
+      <div>
+        <div class="t-h3">Shortest Route</div>
+        <div class="t-xs t-muted" style="margin-top:3px;">AI Optimization</div>
+      </div>
+    </a>
+    <a href="stops.html" class="action-tile">
+      <div class="action-icon action-icon--blue">⛽</div>
+      <div>
+        <div class="t-h3">Nearest Gas</div>
+        <div class="t-xs t-muted" style="margin-top:3px;">Rest & Convenience</div>
+      </div>
+    </a>
+    <a href="cargo.html" class="action-tile">
+      <div class="action-icon action-icon--green">📦</div>
+      <div>
+        <div class="t-h3">Package Info</div>
+        <div class="t-xs t-muted" style="margin-top:3px;">BOL & Sensor Data</div>
+      </div>
+    </a>
+    <a href="dispatcher.html" class="action-tile">
+      <div class="action-icon action-icon--purple">📡</div>
+      <div>
+        <div class="t-h3">Fleet Pulse</div>
+        <div class="t-xs t-muted" style="margin-top:3px;">Dispatcher Hub</div>
+      </div>
+    </a>
+    <a href="owner.html" class="action-tile" style="grid-column:1/-1;flex-direction:row;align-items:center;">
+      <div class="action-icon" style="background:rgba(234,179,8,0.12);">🏢</div>
+      <div>
+        <div class="t-h3">Transparency View (Owner/Buyer)</div>
+        <div class="t-xs t-muted" style="margin-top:3px;">Live tracking for company transparency</div>
+      </div>
+    </a>
+  </nav>
+
+  <!-- ── AI ROUTE ANALYSIS ── -->
+  <section class="card mb-16" style="border-top:3px solid var(--secondary);">
+    <div id="ai-insights">
+      <div class="ai-loading">
+        <div class="ai-spinner"></div>
+        <span class="t-xs t-muted">Optimizing Glide route…</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HARDWARE STATUS ── -->
+  <section class="card mb-16" style="padding:12px 16px;">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-10">
+        <span style="font-size:18px;">📟</span>
+        <div>
+          <div class="t-small" style="font-weight:700;">GlideN'Go Node Integration</div>
+          <div class="t-xs t-muted mt-4">Hardware Receiver: v1.0.4 Active</div>
+        </div>
+      </div>
+      <div>
+        <div class="t-xs t-success" style="font-weight:800;">● Receiving</div>
+        <div class="t-xs t-muted mt-4"><span id="pending-logs">0</span> logs queued</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── RECENT ALERTS ── -->
+  <section>
+    <div class="section-header">
+      <div class="section-label" style="margin:0;">Glide Alerts</div>
+      <span class="t-xs t-muted">Live from Node</span>
+    </div>
+
+    <div class="alert-item alert-item--danger">
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <div class="alert-text">Road closure ahead — Rerouting active</div>
+        <div class="alert-time">Node Alert</div>
+      </div>
+    </div>
+
+    <div class="alert-item alert-item--warning">
+      <span class="alert-icon">💤</span>
+      <div>
+        <div class="alert-text">Fatigue sensor triggered — Stop at nearest gas station</div>
+        <div class="alert-time">AI Warning</div>
+      </div>
+    </div>
+  </section>
+
+  <div style="height:20px;"></div>
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="index.html" class="nav-item active">
+    <span class="nav-ico">🏠</span><span>Home</span>
+  </a>
+  <a href="map.html" class="nav-item">
+    <span class="nav-ico">🗺️</span><span>Map</span>
+  </a>
+  <a href="stops.html" class="nav-item">
+    <span class="nav-ico">⛽</span><span>Stops</span>
+  </a>
+  <a href="cargo.html" class="nav-item">
+    <span class="nav-ico">📦</span><span>Cargo</span>
+  </a>
+  <a href="settings.html" class="nav-item">
+    <span class="nav-ico">⚙️</span><span>Settings</span>
+  </a>
+</nav>
+
+<script src="js/db.js"></script>
+<script src="js/background.js"></script>
+<script src="js/app.js"></script>
+<script src="js/cargo.js"></script>
+<script src="js/ai.js"></script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="GLIDEN'GO Navigation — Turn-by-turn GPS routing with cargo-aware rerouting.">
+  <title>GLIDEN'GO | Navigation</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0D1117">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
+    #map { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; background: #0d1117; }
+    .map-ui { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; }
+    .map-ui > * { pointer-events: auto; }
+    .map-spacer { flex: 1; pointer-events: none; }
+    
+    /* Top banner adjustment */
+    .map-cargo-bar { top: 120px; } /* Push it below turn instructions */
+
+    @media (min-width: 768px) {
+      .map-bottom-panel { max-width: 480px; left: auto; right: 0; border-radius: var(--radius-xl) 0 0 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Map Container -->
+<div id="map"></div>
+
+<div class="map-ui">
+  <!-- TOP OVERLAY BAR -->
+  <header class="map-top-overlay">
+    <a href="index.html" class="back-btn">←</a>
+    <div style="flex:1;text-align:center;">
+      <div class="t-label" style="color:var(--muted);">Glide Route v1.1</div>
+      <div style="font-size:14px;font-weight:800;letter-spacing:0.03em;">Laguna → Davao</div>
+    </div>
+    <div class="connection-pill pill-online" id="conn-pill">Online</div>
+  </header>
+
+  <!-- TURN INSTRUCTION -->
+  <div class="instruction-banner">
+    <div class="instruction-arrow" id="nav-arrow">↱</div>
+    <div>
+      <div class="t-nav" id="nav-instruction">Turn right onto SLEX</div>
+      <div style="font-size:14px;opacity:0.85;margin-top:2px;" id="nav-distance">In 2.3 km</div>
+    </div>
+  </div>
+
+  <div class="map-spacer"></div>
+
+  <!-- CARGO ALERT BAR -->
+  <div class="map-cargo-bar">
+    <span>⚠️</span>
+    <span>Node Alert: Temperature rising. Optimization required.</span>
+  </div>
+
+  <!-- BOTTOM PANEL -->
+  <div class="map-bottom-panel">
+    <div class="flex justify-between items-center mb-16">
+      <div>
+        <div style="font-size:28px;font-weight:900;line-height:1;" id="arrive-time">--:-- --</div>
+        <div class="t-small t-muted mt-4">Calculated by GlideNode AI</div>
+      </div>
+      <div class="badge badge-success" style="font-size:13px;padding:6px 14px;">● ON TIME</div>
+    </div>
+
+    <div class="map-action-btns mb-16">
+      <button class="btn btn-ghost btn-sm" id="btn-reroute" style="width:100%;font-size:12px;">
+        ⚡ Glide Reroute
+      </button>
+      <a href="stops.html" class="btn btn-ghost btn-sm" style="width:100%;font-size:12px;">
+        ⛽ Stops
+      </a>
+      <button class="btn btn-danger btn-sm" style="width:100%;font-size:12px;" id="btn-alert">
+        🚨 Emergency
+      </button>
+    </div>
+
+    <div style="background:var(--surface2);padding:12px;border-radius:var(--radius);display:flex;align-items:center;gap:12px;border:1px solid var(--border);">
+      <span style="font-size:20px;">⛽</span>
+      <div style="flex:1;">
+        <div class="t-small t-muted">Nearest Sync-Stop</div>
+        <div style="font-size:13px;font-weight:700;margin-top:2px;" id="next-stop-name">Searching...</div>
+      </div>
+      <div style="font-size:13px;font-weight:800;color:var(--primary);" id="next-stop-dist">-- km</div>
+    </div>
+  </div>
+</div>
+
+<!-- REROUTE MODAL -->
+<div class="modal-overlay" id="reroute-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="t-h2 mb-4">Glide Optimization</div>
+    <div class="t-small t-muted mb-20">Reroute via GlideNode AI to avoid logistics delays.</div>
+
+    <div class="reroute-option" data-reason="traffic">
+      <span style="font-size:24px;">🚦</span>
+      <div>
+        <div style="font-weight:700;">Heavy Traffic</div>
+        <div class="t-xs t-muted">AI detected congestion</div>
+      </div>
+    </div>
+    <div class="reroute-option" data-reason="road">
+      <span style="font-size:24px;">🚧</span>
+      <div>
+        <div style="font-weight:700;">Road Closure</div>
+        <div class="t-xs t-muted">Node reported obstruction</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;">
+      <button class="btn btn-ghost" id="btn-reroute-close">Cancel</button>
+      <button class="btn btn-primary" id="btn-reroute-confirm">Apply Glide Route</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/db.js"></script>
+<script src="js/background.js"></script>
+<script src="js/app.js"></script>
+<script src="js/map.js"></script>
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBArg1l-vrUcPHx9yfB7mUPbQld7dsTD5Y&libraries=places,geometry&callback=glidenGoMapInit&loading=async"
+  async defer
+></script>
+<script>
+  // UI Logic
+  const modal = document.getElementById('reroute-modal');
+  const btnReroute = document.getElementById('btn-reroute');
+  if (btnReroute) btnReroute.onclick = () => modal.classList.add('open');
+  
+  const btnClose = document.getElementById('btn-reroute-close');
+  if (btnClose) btnClose.onclick = () => modal.classList.remove('open');
+  
+  const btnAlert = document.getElementById('btn-alert');
+  if (btnAlert) btnAlert.onclick = () => {
+    alert('GLIDEN\'GO: Emergency signal sent to all nearby fleet nodes and dispatcher.');
+  };
+
+  // Close modal on click overlay
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.classList.remove('open');
+  };
+</script>
+</body>
+</html>

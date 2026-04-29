@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="TRAXHAUL Fleet Operations Center — Monitor all active trucks, ETAs, and delivery status in real-time.">
+  <title>TRAXHAUL | Fleet Operations</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0D1117">
+  <!-- Google Maps loaded at bottom -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    body { overflow: hidden; }
+
+    .dispatcher-layout {
+      display: flex;
+      height: calc(100dvh - 60px);
+    }
+
+    /* Sidebar */
+    .fleet-sidebar {
+      width: 340px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .fleet-sidebar-inner {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Map panel */
+    .fleet-map-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #fleet-map {
+      flex: 1;
+    }
+
+    /* Detail panel below map */
+    .truck-detail {
+      height: 180px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 16px 20px;
+      overflow-y: auto;
+    }
+
+    /* Mobile: stack vertically */
+    @media (max-width: 768px) {
+      body { overflow: auto; }
+      .dispatcher-layout { flex-direction: column; height: auto; }
+      .fleet-sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+      .fleet-sidebar-inner { max-height: 280px; }
+      .fleet-map-panel { height: 50dvh; }
+      #fleet-map { height: 100%; }
+      .truck-detail { height: auto; }
+    }
+
+    /* Google Maps InfoWindow override */
+    .gm-style .gm-style-iw-c {
+      background: #1C2128 !important;
+      border: 1px solid #21262D !important;
+      border-radius: 10px !important;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.6) !important;
+      padding: 0 !important;
+    }
+    .gm-style .gm-style-iw-d { overflow: hidden !important; }
+    .gm-style .gm-style-iw-tc::after { background: #1C2128 !important; }
+    button.gm-ui-hover-effect { display: none !important; }
+
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 10px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all 0.25s ease; z-index: 999; white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+    .toast.toast-show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.toast-success { border-color: var(--success); color: var(--success); }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="top-bar">
+  <div class="flex items-center gap-12">
+    <a href="index.html" class="back-btn">←</a>
+    <div>
+      <div class="logo" style="font-size:18px;">TRAX<em>HAUL</em></div>
+      <div class="t-xs t-muted" style="margin-top:-2px;">Fleet Operations Center</div>
+    </div>
+  </div>
+  <div class="flex items-center gap-8">
+    <div class="badge badge-success" style="font-size:11px;">3 Active</div>
+    <div class="connection-pill pill-online" id="conn-pill">Online</div>
+  </div>
+</header>
+
+<div class="dispatcher-layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="fleet-sidebar">
+
+    <!-- Metrics Row -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="text-align:center;padding:10px 0;">
+          <div style="font-size:24px;font-weight:900;color:var(--text);">3</div>
+          <div class="t-xs t-muted" style="margin-top:2px;">Active</div>
+        </div>
+        <div style="text-align:center;padding:10px 0;border-left:1px solid var(--border);border-right:1px solid var(--border);">
+          <div style="font-size:24px;font-weight:900;color:var(--warning);">1</div>
+          <div class="t-xs t-muted" style="margin-top:2px;">Delayed</div>
+        </div>
+        <div style="text-align:center;padding:10px 0;">
+          <div style="font-size:24px;font-weight:900;color:var(--secondary);">1</div>
+          <div class="t-xs t-muted" style="margin-top:2px;">At Stop</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div style="padding:10px 16px;border-bottom:1px solid var(--border);">
+      <input type="text" class="input" placeholder="Search by plate or driver..." id="fleet-search" style="font-size:13px;">
+    </div>
+
+    <!-- Truck List -->
+    <div class="fleet-sidebar-inner">
+
+    <!-- Truck List -->
+    <div class="fleet-sidebar-inner" id="fleet-list-container">
+      <!-- Dynamic list -->
+    </div>
+
+    <!-- Alert Feed -->
+    <div style="padding:12px 16px;border-top:1px solid var(--border);">
+      <div class="t-label mb-8">Live Alerts</div>
+      <div id="alert-feed-container">
+        <div class="alert-item alert-item--warning" style="padding:10px 12px;margin-bottom:6px;">
+          <span class="alert-icon" style="font-size:14px;">⚠️</span>
+          <div class="alert-text" style="font-size:11px;">System: Background sync enabled</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── MAP + DETAIL PANEL ── -->
+  <div class="fleet-map-panel">
+    <div id="fleet-map"></div>
+
+    <!-- Selected Truck Detail -->
+    <div class="truck-detail">
+      <div class="flex justify-between items-start">
+        <div>
+          <div style="font-size:18px;font-weight:900;" id="detail-plate">Select a Truck</div>
+          <div class="t-small t-muted" id="detail-driver">---</div>
+        </div>
+        <div class="badge badge-neutral" id="detail-status">---</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px;">
+        <div>
+          <div class="t-label">Route</div>
+          <div class="t-small" style="font-weight:700;margin-top:3px;" id="detail-route">---</div>
+        </div>
+        <div>
+          <div class="t-label">ETA</div>
+          <div class="t-small" style="font-weight:700;margin-top:3px;" id="detail-eta">---</div>
+        </div>
+        <div>
+          <div class="t-label">Cargo</div>
+          <div class="t-small" style="font-weight:700;margin-top:3px;" id="detail-cargo">---</div>
+        </div>
+        <div>
+          <div class="t-label">Speed</div>
+          <div class="t-small" style="font-weight:700;margin-top:3px;" id="detail-speed">---</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-ghost btn-sm" onclick="showToast('Reroute requested','success')">⚡ Reroute</button>
+        <button class="btn btn-ghost btn-sm" onclick="showToast('Calling driver...','info')">📞 Call</button>
+        <button class="btn btn-ghost btn-sm" onclick="showToast('Report generated','success')">📋 Report</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+<script src="js/map.js"></script>
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBArg1l-vrUcPHx9yfB7mUPbQld7dsTD5Y&libraries=places,geometry&callback=traxhaulMapInit&loading=async"
+  async defer
+></script>
+<script>
+async function renderFleetList() {
+  const container = document.getElementById('fleet-list-container');
+  if (!container || !window.TraxDB) return;
+
+  const fleet = await TraxDB.getAll(STORES.FLEET);
+  const active = await TraxDB.get(STORES.DELIVERIES, 'active');
+  const all = active ? [{ ...active, isActive: true }, ...fleet] : fleet;
+
+  container.innerHTML = all.map(t => `
+    <div class="truck-card ${t.isActive ? 'selected' : ''}" data-truck="${t.plate}" onclick="selectTruck('${t.plate}')">
+      <div class="flex justify-between items-center">
+        <div class="truck-plate">${t.plate}</div>
+        <div class="badge badge-${t.status === 'DELAYED' ? 'warning' : t.status === 'AT STOP' ? 'secondary' : 'success'}">${t.status || 'ON TIME'}</div>
+      </div>
+      <div class="truck-driver mt-4">${t.driver}</div>
+      <div class="truck-route t-xs t-muted">${t.origin || 'N/A'} → ${t.destination || 'N/A'}</div>
+    </div>
+  `).join('');
+
+  if (active) selectTruck(active.plate);
+}
+
+async function selectTruck(plate) {
+  const t = await TraxDB.get(STORES.FLEET, plate) || await TraxDB.get(STORES.DELIVERIES, 'active');
+  if (!t) return;
+
+  document.querySelectorAll('.truck-card').forEach(c => {
+      c.classList.toggle('selected', c.dataset.truck === plate);
+  });
+
+  document.getElementById('detail-plate').textContent = t.plate;
+  document.getElementById('detail-driver').textContent = t.driver;
+  document.getElementById('detail-route').textContent = `${t.origin?.substring(0,3)} → ${t.destination?.substring(0,3)}`;
+  document.getElementById('detail-eta').textContent = 'Live Data';
+  document.getElementById('detail-cargo').textContent = t.type || 'N/A';
+  document.getElementById('detail-speed').textContent = '---';
+  
+  const s = document.getElementById('detail-status');
+  s.textContent = t.status || 'ON TIME';
+  s.className = `badge badge-${t.status === 'DELAYED' ? 'warning' : t.status === 'AT STOP' ? 'secondary' : 'success'}`;
+
+  // Center map on truck if map exists
+  if (window.dispatcherMap && t.coords) {
+      window.dispatcherMap.panTo(t.coords);
+      window.dispatcherMap.setZoom(10);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(renderFleetList, 500); // Wait for DB init
+});
+
+// Search filter
+document.getElementById('fleet-search')?.addEventListener('input', function () {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.truck-card').forEach(c => {
+    c.style.display = c.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+</script>
+</body>
+</html>
+</body>
+</html>
