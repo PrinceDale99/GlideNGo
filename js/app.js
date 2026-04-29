@@ -76,16 +76,64 @@ async function toggleTheme(isLight) {
 }
 
 // ─── Destination Selection ──────────────────
+// ─── Destination Selection ──────────────────
 function initDestinationSelector() {
     const editBtn = document.getElementById('btn-edit-route');
-    if (!editBtn) return;
+    const modal = document.getElementById('modal-journey');
+    const saveBtn = document.getElementById('btn-save-journey');
+    
+    if (!editBtn || !modal || !saveBtn) return;
 
-    editBtn.addEventListener('click', () => {
-        const newDest = prompt('Enter new target location (City/Region):', 'Manila');
-        if (newDest) {
-            updateTargetLocation(newDest);
+    window.closeJourneyModal = () => {
+        modal.style.display = 'none';
+    };
+
+    editBtn.addEventListener('click', async () => {
+        modal.style.display = 'flex';
+        const delivery = await GlideGoDB.get(STORES.DELIVERIES, 'active');
+        if (delivery) {
+            document.getElementById('input-to').value = delivery.destination || '';
+            
+            // Auto-populate 'From' using GPS logic
+            if (delivery.coords) {
+                const city = await getCityFromCoords(delivery.coords.lat, delivery.coords.lng);
+                document.getElementById('input-from').value = city;
+                // Sync to DB as origin
+                delivery.origin = city;
+                await GlideGoDB.put(STORES.DELIVERIES, delivery);
+            }
         }
     });
+
+    saveBtn.addEventListener('click', async () => {
+        const newTo = document.getElementById('input-to').value;
+        if (newTo) {
+            await updateTargetLocation(newTo);
+            closeJourneyModal();
+        }
+    });
+}
+
+async function getCityFromCoords(lat, lng) {
+    // Simulated reverse geocoding for PH regions if offline
+    // In a real pitch, we'd use Google Geocoding API if script is loaded
+    if (window.google && google.maps && google.maps.Geocoder) {
+        try {
+            const geocoder = new google.maps.Geocoder();
+            const response = await geocoder.geocode({ location: { lat, lng } });
+            if (response.results[0]) {
+                const cityComp = response.results[0].address_components.find(c => c.types.includes('locality'));
+                return cityComp ? cityComp.long_name : response.results[0].formatted_address.split(',')[0];
+            }
+        } catch (e) { console.warn('Geocoding failed, falling back to simulator'); }
+    }
+
+    // Simulator logic for PH Highways
+    if (lat > 14.8) return 'Pampanga, PH';
+    if (lat > 14.5) return 'Metro Manila, PH';
+    if (lat > 14.1) return 'Calamba, Laguna';
+    if (lat > 13.5) return 'Batangas, PH';
+    return 'Southern Luzon';
 }
 
 async function updateTargetLocation(name) {
@@ -93,22 +141,26 @@ async function updateTargetLocation(name) {
     const delivery = await GlideGoDB.get(STORES.DELIVERIES, 'active');
     if (delivery) {
         delivery.destination = name;
-        // In a real app, we'd use Geocoding API here. 
-        // For now, we'll simulate coordinates based on the name or keep current if unknown.
-        if (name.toLowerCase().includes('manila')) {
-            delivery.destCoords = { lat: 14.5995, lng: 120.9842 };
-        } else if (name.toLowerCase().includes('cebu')) {
-            delivery.destCoords = { lat: 10.3157, lng: 123.8854 };
-        } else if (name.toLowerCase().includes('davao')) {
-            delivery.destCoords = { lat: 7.0707, lng: 125.6087 };
-        }
+        
+        // Geo-decode (Simulated)
+        const coords = await getCoordsFromAddress(name);
+        if (coords) delivery.destCoords = coords;
         
         await GlideGoDB.put(STORES.DELIVERIES, delivery);
-        showToast(`Target Location updated to ${name}`, 'success');
+        showToast(`Route updated to ${name}`, 'success');
         refreshDashboard();
-        // Notify other windows (like map)
         window.dispatchEvent(new CustomEvent('route-updated'));
     }
+}
+
+async function getCoordsFromAddress(name) {
+    const q = name.toLowerCase();
+    if (q.includes('manila')) return { lat: 14.5995, lng: 120.9842 };
+    if (q.includes('cebu')) return { lat: 10.3157, lng: 123.8854 };
+    if (q.includes('davao')) return { lat: 7.0707, lng: 125.6087 };
+    if (q.includes('laguna')) return { lat: 14.2770, lng: 121.3500 };
+    if (q.includes('batangas')) return { lat: 13.7565, lng: 121.0583 };
+    return null;
 }
 
 // ─── Settings Logic ─────────────────────────

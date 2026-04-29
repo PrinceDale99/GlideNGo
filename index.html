@@ -211,6 +211,29 @@
 </main>
 
 <!-- BOTTOM NAV -->
+<!-- JOURNEY EDITOR MODAL -->
+<div id="modal-journey" class="modal-backdrop" style="display:none; align-items:center; justify-content:center; z-index:2000;">
+  <div class="modal-content" style="width:90%; max-width:400px; padding:24px; background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow-lg);">
+    <div class="flex justify-between items-center mb-20">
+      <h2 class="t-h2" style="margin:0;">Update Journey</h2>
+      <button onclick="closeJourneyModal()" class="btn btn-ghost btn-sm">✕</button>
+    </div>
+    
+    <div class="mb-16">
+      <label class="t-label">Current Location (Auto)</label>
+      <input type="text" id="input-from" class="input" readonly style="background:var(--surface2); opacity:0.8;" placeholder="Detecting GPS...">
+    </div>
+    
+    <div class="mb-24">
+      <label class="t-label">Destination (To)</label>
+      <input type="text" id="input-to" class="input" placeholder="e.g. Davao City, PH">
+    </div>
+    
+    <button id="btn-save-journey" class="btn btn-primary btn-block">Set New Destination</button>
+    <p class="t-xs t-muted mt-12 text-center">System will automatically recalculate optimal route and ETAs.</p>
+  </div>
+</div>
+
 <nav class="bottom-nav">
   <a href="index.html" class="nav-item active">
     <span class="nav-ico">🏠</span><span>Home</span>
