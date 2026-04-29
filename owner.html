@@ -142,14 +142,14 @@
 <!-- TOP BAR -->
 <header class="top-bar">
   <div class="flex items-center gap-12">
-    <div class="logo">TRAX<em>HAUL</em></div>
+    <div class="logo">GlideN<em>GO</em></div>
     <div style="border-left:1px solid var(--border);padding-left:12px;">
-      <div class="t-xs t-muted" style="text-transform:uppercase;letter-spacing:.06em;">Owner View</div>
-      <div class="t-xs" style="font-weight:700;margin-top:1px;">PJBT Logistics Inc.</div>
+      <div class="t-xs t-muted" style="text-transform:uppercase;letter-spacing:.06em;">Owner Dashboard</div>
+      <div class="t-xs" style="font-weight:700;margin-top:1px;">Fleet Operations Center</div>
     </div>
   </div>
   <div class="flex items-center gap-8">
-    <!-- Read-only badge -->
+    <a href="dispatcher.html" class="btn btn-ghost btn-sm">🚀 Open HQ</a>
     <div class="badge badge-neutral" style="font-size:10px;">READ ONLY</div>
     <div class="connection-pill pill-online" id="conn-pill">Online</div>
   </div>
@@ -222,10 +222,10 @@
 <script>
 async function renderOwnerDashboard() {
   const container = document.getElementById('owner-fleet-container');
-  if (!container || !window.TraxDB) return;
+  if (!container || !window.GlideGoDB) return;
 
-  const fleet = await TraxDB.getAll(STORES.FLEET);
-  const active = await TraxDB.get(STORES.DELIVERIES, 'active');
+  const fleet = await GlideGoDB.getAll(STORES.FLEET);
+  const active = await GlideGoDB.get(STORES.DELIVERIES, 'active');
   const all = active ? [{ ...active, isActive: true }, ...fleet] : fleet;
 
   container.innerHTML = all.map(t => `
@@ -259,7 +259,7 @@ async function renderOwnerDashboard() {
 }
 
 async function selectOwnerTruck(plate) {
-  const t = await TraxDB.get(STORES.FLEET, plate) || await TraxDB.get(STORES.DELIVERIES, 'active');
+  const t = await GlideGoDB.get(STORES.FLEET, plate) || await GlideGoDB.get(STORES.DELIVERIES, 'active');
   if (!t) return;
 
   document.querySelectorAll('.delivery-row').forEach(r => r.classList.toggle('selected', r.dataset.truck === plate));
@@ -309,8 +309,8 @@ window.ownerMapInit = async function() {
     disableDefaultUI: false,
   });
 
-  const fleet = await TraxDB.getAll(STORES.FLEET);
-  const active = await TraxDB.get(STORES.DELIVERIES, 'active');
+  const fleet = await GlideGoDB.getAll(STORES.FLEET);
+  const active = await GlideGoDB.get(STORES.DELIVERIES, 'active');
   const all = active ? [active, ...fleet] : fleet;
 
   all.forEach(truck => {
@@ -351,8 +351,8 @@ setInterval(() => {
 }, 1000);
 
 async function exportReport() {
-  const fleet = await TraxDB.getAll(STORES.FLEET);
-  const active = await TraxDB.get(STORES.DELIVERIES, 'active');
+  const fleet = await GlideGoDB.getAll(STORES.FLEET);
+  const active = await GlideGoDB.get(STORES.DELIVERIES, 'active');
   const all = active ? [active, ...fleet] : fleet;
 
   const rows = [

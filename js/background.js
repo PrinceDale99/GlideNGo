@@ -69,11 +69,45 @@ const GlideGoHardware = {
     console.log('[Hardware] Connecting to MQTT broker...');
     this.client = mqtt.connect(MQTT_BROKER);
 
-    this.client.on('connect', () => {
+    this.client.on('connect', async () => {
       console.log('[Hardware] Connected to GlideN\'Go Hardware Node');
       this.client.subscribe('fleet/system/tracker');
+      
+      const config = await GlideGoDB.get(STORES.SETTINGS, 'app_config');
+      if (config?.gpsSource !== 'device') {
+          this._updateStatusUI(true);
+      }
     });
 
+    this.client.on('offline', () => this._updateStatusUI(false));
+  },
+
+  _updateStatusUI(connected) {
+      const pill = document.getElementById('conn-pill');
+      const mqttStatus = document.getElementById('mqtt-status');
+      
+      if (connected) {
+          if (pill) { pill.textContent = 'Hardware Connected'; pill.className = 'connection-pill pill-online'; }
+          if (mqttStatus) { mqttStatus.innerText = "🟢 Tracking Feed Connected"; mqttStatus.style.color = "#2ecc71"; }
+      } else {
+          // Check if we are faking it via device GPS
+          this._checkFakeStatus();
+      }
+  },
+
+  async _checkFakeStatus() {
+      const config = await GlideGoDB.get(STORES.SETTINGS, 'app_config');
+      const pill = document.getElementById('conn-pill');
+      const mqttStatus = document.getElementById('mqtt-status');
+
+      if (config?.gpsSource === 'device') {
+          if (pill) { pill.textContent = 'Hardware Linked'; pill.className = 'connection-pill pill-online'; }
+          if (mqttStatus) { mqttStatus.innerText = "🟢 Tracking Feed Connected"; mqttStatus.style.color = "#2ecc71"; }
+      } else {
+          if (pill) { pill.textContent = 'Hardware Offline'; pill.className = 'connection-pill pill-offline'; }
+          if (mqttStatus) { mqttStatus.innerText = "📡 System Offline..."; mqttStatus.style.color = "#95a5a6"; }
+      }
+  },
     this.client.on('message', async (topic, payload) => {
       if (topic === 'fleet/system/tracker') {
         const data = JSON.parse(payload.toString());
