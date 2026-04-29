@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="TRAXHAUL Settings — Configure driver profile, offline maps, notifications, and sync preferences.">
-  <title>TRAXHAUL | Settings</title>
+  <meta name="description" content="GLIDEN'GO Settings — Configure driver profile, light mode, and sync preferences.">
+  <title>GLIDEN'GO | Settings</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0D1117">
   <link rel="stylesheet" href="css/base.css">
@@ -133,6 +133,21 @@
     </div>
   </div>
 
+  <!-- ── APPEARANCE ── -->
+  <div class="section-label">Appearance</div>
+  <div class="card mb-16">
+    <div class="toggle-wrap">
+      <div>
+        <div class="t-small" style="font-weight:700;">Light Mode</div>
+        <div class="t-xs t-muted mt-4">Switch to high-contrast light theme</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-light-mode">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
   <!-- ── NOTIFICATIONS ── -->
   <div class="section-label">Notifications</div>
   <div class="card mb-16">
@@ -176,7 +191,7 @@
         <span class="toggle-slider"></span>
       </label>
     </div>
-    <div class="toggle-wrap">
+    <div class="toggle-wrap" style="border:none;">
       <div>
         <div class="t-small" style="font-weight:700;">Voice Navigation (Filipino)</div>
         <div class="t-xs t-muted mt-4">Turn-by-turn in Tagalog</div>

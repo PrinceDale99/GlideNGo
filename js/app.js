@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[GLIDEN\'GO] Database initialized');
   }
 
+  // Theme initialization
+  initTheme();
+
   // Service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
@@ -37,6 +40,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Reroute modal (if present)
   initRerouteModal();
 
+  // Destination logic
+  initDestinationSelector();
+
+  // Settings page specific logic
+  if (window.location.pathname.includes('settings.html')) {
+      initSettingsPage();
+  }
+
   // Dashboard Updates
   refreshDashboard();
   window.addEventListener('hardware-update', () => refreshDashboard());
@@ -44,6 +55,74 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Start dynamic ETA
   startETACountdown();
 });
+
+// ─── Theme Management ──────────────────────
+async function initTheme() {
+    if (!window.GlideGoDB) return;
+    const config = await GlideGoDB.get(STORES.SETTINGS, 'app_config');
+    if (config?.lightMode) {
+        document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+}
+
+async function toggleTheme(isLight) {
+    if (!window.GlideGoDB) return;
+    const config = await GlideGoDB.get(STORES.SETTINGS, 'app_config') || {};
+    config.lightMode = isLight;
+    await GlideGoDB.put(STORES.SETTINGS, { ...config, key: 'app_config' });
+    initTheme();
+}
+
+// ─── Destination Selection ──────────────────
+function initDestinationSelector() {
+    const editBtn = document.getElementById('btn-edit-route');
+    if (!editBtn) return;
+
+    editBtn.addEventListener('click', () => {
+        const newDest = prompt('Enter new target location (City/Region):', 'Manila');
+        if (newDest) {
+            updateTargetLocation(newDest);
+        }
+    });
+}
+
+async function updateTargetLocation(name) {
+    if (!window.GlideGoDB) return;
+    const delivery = await GlideGoDB.get(STORES.DELIVERIES, 'active');
+    if (delivery) {
+        delivery.destination = name;
+        // In a real app, we'd use Geocoding API here. 
+        // For now, we'll simulate coordinates based on the name or keep current if unknown.
+        if (name.toLowerCase().includes('manila')) {
+            delivery.destCoords = { lat: 14.5995, lng: 120.9842 };
+        } else if (name.toLowerCase().includes('cebu')) {
+            delivery.destCoords = { lat: 10.3157, lng: 123.8854 };
+        } else if (name.toLowerCase().includes('davao')) {
+            delivery.destCoords = { lat: 7.0707, lng: 125.6087 };
+        }
+        
+        await GlideGoDB.put(STORES.DELIVERIES, delivery);
+        showToast(`Target Location updated to ${name}`, 'success');
+        refreshDashboard();
+        // Notify other windows (like map)
+        window.dispatchEvent(new CustomEvent('route-updated'));
+    }
+}
+
+// ─── Settings Logic ─────────────────────────
+async function initSettingsPage() {
+    const lightToggle = document.getElementById('toggle-light-mode');
+    if (!lightToggle || !window.GlideGoDB) return;
+
+    const config = await GlideGoDB.get(STORES.SETTINGS, 'app_config');
+    lightToggle.checked = !!config?.lightMode;
+
+    lightToggle.addEventListener('change', (e) => {
+        toggleTheme(e.target.checked);
+    });
+}
 
 async function refreshDashboard() {
   if (!window.GlideGoDB) return;

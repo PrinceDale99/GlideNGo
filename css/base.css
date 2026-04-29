@@ -33,6 +33,19 @@
   --transition: 0.18s ease;
 }
 
+[data-theme="light"] {
+  --bg:        #F5F7FA;
+  --surface:   #FFFFFF;
+  --surface2:  #EDF2F7;
+  --border:    #E2E8F0;
+  --text:      #1A202C;
+  --muted:     #718096;
+  --muted2:    #A0AEC0;
+  
+  --shadow:    0 4px 12px rgba(0,0,0,0.05);
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.02);
+}
+
 /* ===========================
    RESET & BASE
 =========================== */

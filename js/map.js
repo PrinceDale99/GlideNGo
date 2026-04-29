@@ -58,13 +58,15 @@ async function initDriverMap() {
     }
   }
 
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
   driverMap = new google.maps.Map(mapEl, {
     center: origin,
     zoom: 12,
-    styles: DARK_MAP_STYLE,
+    styles: isLight ? [] : DARK_MAP_STYLE,
     disableDefaultUI: true,
     gestureHandling: 'greedy',
-    backgroundColor: '#0d1117'
+    backgroundColor: isLight ? '#fff' : '#0d1117'
   });
 
   // Truck marker (current position)
@@ -126,22 +128,26 @@ async function initDriverMap() {
       if (driverMarker) driverMarker.setPosition(newPos);
       if (driverMap) driverMap.panTo(newPos);
   });
+
+  // Route update from index.html
+  window.addEventListener('route-updated', () => {
+      console.log('[GLIDEN\'GO] Route updated, re-initializing map...');
+      initDriverMap();
+  });
 }
 
 // ─── Dispatcher Fleet Map ────────────────────
 let dispatcherMap;
 
-async function initDispatcherMap() {
-  const mapEl = document.getElementById('fleet-map');
-  if (!mapEl) return;
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
 
   dispatcherMap = new google.maps.Map(mapEl, {
     center: { lat: 12.0, lng: 123.0 },
     zoom: 6,
-    styles: DARK_MAP_STYLE,
+    styles: isLight ? [] : DARK_MAP_STYLE,
     disableDefaultUI: false,
     zoomControl: true,
-    backgroundColor: '#0d1117'
+    backgroundColor: isLight ? '#fff' : '#0d1117'
   });
 
   if (window.GlideGoDB) {
@@ -158,7 +164,7 @@ async function initDispatcherMap() {
       new google.maps.Marker({
         position: truck.coords,
         map: dispatcherMap,
-        label: { text: `🚛 ${truck.plate}`, color: '#fff', fontSize: '10px' },
+        label: { text: `🚛 ${truck.plate}`, color: isLight ? '#000' : '#fff', fontSize: '10px' },
         icon: {
           path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
           fillColor: truck.color,
@@ -181,6 +187,16 @@ window.glidenGoMapInit = async function () {
   while (!window.GlideGoDB && attempts < 20) {
     await new Promise(r => setTimeout(r, 100));
     attempts++;
+  }
+
+  // Set theme from DB before rendering map
+  if (window.GlideGoDB) {
+      const config = await GlideGoDB.get(STORES.SETTINGS, 'app_config');
+      if (config?.lightMode) {
+          document.documentElement.setAttribute('data-theme', 'light');
+      } else {
+          document.documentElement.removeAttribute('data-theme');
+      }
   }
 
   if (document.getElementById('map'))       await initDriverMap();
