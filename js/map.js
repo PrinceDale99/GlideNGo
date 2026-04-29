@@ -108,9 +108,24 @@ async function initDriverMap() {
     polylineOptions: { strokeColor: '#F97316', strokeWeight: 5, strokeOpacity: 0.8 },
   });
 
+  // Waypoints
+  let waypoints = [];
+  if (window.GlideGoDB) {
+      const active = await GlideGoDB.get(STORES.DELIVERIES, 'active');
+      if (active?.stopover) {
+          const stops = await GlideGoDB.getAll(STORES.STOPS);
+          const stop = stops.find(s => s.name === active.stopover);
+          if (stop && stop.coords) {
+              waypoints.push({ location: stop.coords, stopover: true });
+          }
+      }
+  }
+
   directionsService.route({
     origin: origin,
     destination: destination,
+    waypoints: waypoints,
+    optimizeWaypoints: true,
     travelMode: google.maps.TravelMode.DRIVING,
     region: 'PH',
   }, (result, status) => {

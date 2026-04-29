@@ -237,11 +237,29 @@ function initFilterPills() {
 }
 
 function initRerouteModal() {
-  window.showRerouteModal = (reason) => {
+  window.showRerouteModal = async (reason) => {
+    if (!window.GlideGoDB) return;
+    
+    // 1. Alert Hardware
     if (window.GlideGoHardware) {
         GlideGoHardware.sendAlert('REROUTE');
     }
-    showToast(`Reroute Triggered: ${reason}`, 'warning');
+    
+    // 2. Find recommended stopover
+    const stops = await GlideGoDB.getAll(STORES.STOPS);
+    const rec = stops.find(s => s.recommended) || stops[0];
+    
+    if (rec) {
+        const active = await GlideGoDB.get(STORES.DELIVERIES, 'active');
+        active.stopover = rec.name;
+        active.status = 'REROUTING';
+        await GlideGoDB.put(STORES.DELIVERIES, active);
+        
+        showToast(`AI Reroute: Heading to ${rec.name} due to ${reason}`, 'warning');
+        
+        // 3. Notify UI and redirect to map
+        setTimeout(() => window.location.href = 'map.html', 1500);
+    }
   };
 }
 
