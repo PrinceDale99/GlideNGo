@@ -154,6 +154,11 @@ async function initDriverMap() {
 // ─── Dispatcher Fleet Map ────────────────────
 let dispatcherMap;
 
+async function initDispatcherMap() {
+  console.log('[GLIDEN\'GO] Initializing Dispatcher Fleet Map...');
+  const mapEl = document.getElementById('fleet-map');
+  if (!mapEl) return;
+
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
 
   dispatcherMap = new google.maps.Map(mapEl, {

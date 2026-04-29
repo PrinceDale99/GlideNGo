@@ -41,25 +41,8 @@
   </div>
 
   <!-- Route Strip Visualization -->
-  <div class="route-strip">
-    <div class="route-strip-truck" style="left:0;">
-      <div class="route-strip-label" style="left:50%;">You</div>
-    </div>
-    <div class="route-strip-stop" style="left:22%;">
-      <div class="route-strip-label">Petron</div>
-    </div>
-    <div class="route-strip-stop" style="left:38%;background:var(--secondary);">
-      <div class="route-strip-label">Shell</div>
-    </div>
-    <div class="route-strip-stop" style="left:55%;background:var(--success);">
-      <div class="route-strip-label">Rest</div>
-    </div>
-    <div class="route-strip-stop" style="left:70%;background:var(--muted);">
-      <div class="route-strip-label">Toll</div>
-    </div>
-    <div class="route-strip-dest">
-      <div class="route-strip-label" style="right:0;transform:none;">Davao</div>
-    </div>
+  <div class="route-strip" id="dynamic-route-strip">
+    <!-- Rendered Dynamically -->
   </div>
 
   <!-- GLIDE-SYNC Recommendation Banner -->
@@ -100,38 +83,66 @@
 <script src="js/background.js"></script>
 <script src="js/app.js"></script>
 <script>
+  async function updateRouteStrip() {
+    const strip = document.getElementById('dynamic-route-strip');
+    if (!strip || !window.GlideGoDB) return;
+
+    const active = await GlideGoDB.get(STORES.DELIVERIES, 'active');
+    if (!active) return;
+
+    strip.innerHTML = `
+      <div class="route-strip-truck" style="left:0;">
+        <div class="route-strip-label" style="left:50%;">${active.origin}</div>
+      </div>
+      ${active.stopover ? `
+        <div class="route-strip-stop" style="left:50%; background:var(--secondary);">
+          <div class="route-strip-label">${active.stopover}</div>
+        </div>
+      ` : ''}
+      <div class="route-strip-dest">
+        <div class="route-strip-label" style="right:0;transform:none;">${active.destination}</div>
+      </div>
+    `;
+  }
+
   async function renderStops(filter = 'all') {
     const list = document.getElementById('stops-list');
     if (!list || !window.GlideGoDB) return;
 
+    await updateRouteStrip();
+
     const stops = await GlideGoDB.getAll(STORES.STOPS);
+    const activeDelivery = await GlideGoDB.get(STORES.DELIVERIES, 'active');
     const filtered = filter === 'all' ? stops : stops.filter(s => s.type === filter);
 
-    list.innerHTML = filtered.map((s, i) => `
-      <div class="stop-card ${s.recommended ? 'stop-card--recommended' : ''}" data-type="${s.type}" style="--i:${i};">
-        <div class="stop-icon-circle stop-icon--${s.type === 'gas' ? 'gas' : s.type === 'rest' ? 'rest' : 'chk'}">
-          ${s.type === 'gas' ? '⛽' : s.type === 'rest' ? '🛏' : '🔵'}
-        </div>
-        <div style="flex:1;">
-          <div class="flex justify-between items-start">
-            <div>
-              <div class="t-h3">${s.name}</div>
-              ${s.recommended ? '<div class="badge badge-secondary" style="margin-top:4px;font-size:9px;">RECOMMENDED</div>' : ''}
-            </div>
-            <div style="text-align:right;">
-              <div class="stop-distance">${s.distance || '---'}</div>
-              <div class="t-xs t-muted">${s.eta || '---'}</div>
-            </div>
+    list.innerHTML = filtered.map((s, i) => {
+      const isActiveStop = activeDelivery?.stopover === s.name;
+      return `
+        <div class="stop-card ${s.recommended ? 'stop-card--recommended' : ''} ${isActiveStop ? 'active-stop' : ''}" data-type="${s.type}" style="--i:${i};">
+          <div class="stop-icon-circle stop-icon--${s.type === 'gas' ? 'gas' : s.type === 'rest' ? 'rest' : 'chk'}">
+            ${s.type === 'gas' ? '⛽' : s.type === 'rest' ? '🛏' : '🔵'}
           </div>
-          <div class="amenity-row">
-            ${(s.amenities || []).map(a => `<span class="amenity-tag">${a}</span>`).join('')}
+          <div style="flex:1;">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="t-h3">${s.name} ${isActiveStop ? '<span class="badge badge-success">CURRENT STOP</span>' : ''}</div>
+                ${s.recommended ? '<div class="badge badge-secondary" style="margin-top:4px;font-size:9px;">RECOMMENDED</div>' : ''}
+              </div>
+              <div style="text-align:right;">
+                <div class="stop-distance">${s.distance || '---'}</div>
+                <div class="t-xs t-muted">${s.eta || '---'}</div>
+              </div>
+            </div>
+            <div class="amenity-row">
+              ${(s.amenities || []).map(a => `<span class="amenity-tag">${a}</span>`).join('')}
+            </div>
+            <button class="btn ${isActiveStop ? 'btn-success' : s.recommended ? 'btn-primary' : 'btn-ghost'} btn-sm btn-block" onclick="setStop('${s.name}')" ${isActiveStop ? 'disabled' : ''}>
+              ${isActiveStop ? 'Current Destination' : (s.type === 'checkpoint' ? 'View Details' : 'Set as Stopover')}
+            </button>
           </div>
-          <button class="btn ${s.recommended ? 'btn-primary' : 'btn-ghost'} btn-sm btn-block" onclick="setStop('${s.name}')">
-            ${s.type === 'checkpoint' ? 'View Details' : 'Set as Stopover'}
-          </button>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   async function setStop(name) {

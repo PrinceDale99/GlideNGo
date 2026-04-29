@@ -39,25 +39,35 @@ graph TD
 
 ---
 
-## 🔄 Data Workflow (IPO Model)
+## 🔄 Detailed Data Workflow (IPO Model)
 
-### 📥 Input
-- **Hardware Telemetry:** Real-time Latitude, Longitude, and Temperature from ESP32 via MQTT.
-- **Device Sensors:** Internal GPS coordinates from the smartphone/tablet.
-- **User Actions:** Route selection, stopover assignments, and theme toggling.
-- **Static Assets:** Philippine highway maps and stopover location data.
+GlideN'Go operates on a precise Input-Process-Output (IPO) model to ensure high-fidelity logistics monitoring and driver safety.
 
-### ⚙️ Process
-1.  **Standardization:** Mapping various input sources (MQTT vs. Device GPS) into a unified `coords` schema.
-2.  **Cold-Chain Analysis:** Real-time comparison of container temperature against threshold (29°C) to trigger spoilage alerts.
-3.  **AI Rerouting:** Analyzing driving time (5h limit) and traffic to suggest optimal rest stops and calculate new ETAs.
-4.  **Sync Management:** Queuing GPS logs in IndexedDB for batch uploading when the network is unstable.
+### 📥 Input (The "Data Harvest")
+- **ESP32 Hardware Node:** 
+    - **GPS Stream:** Latitude/Longitude via NMEA sentences, transmitted over MQTT WebSockets.
+    - **Thermal Stream:** Ambient container temperature sampled every 2 seconds via DHT11.
+    - **Heartbeat:** Connection latency and signal strength indicators.
+- **Internal Device Sensors:** Geolocation API fallback if hardware connectivity is lost.
+- **B2B Dispatch Commands:** Remote destination updates and cargo manifest assignments from the HQ Dashboard.
+- **Static Intelligence:** A curated database of Philippine Expressway (SLEX/NLEX/TPLEX) rest areas, gas stations, and checkpoints.
 
-### 📤 Output
-- **Driver Navigation:** Dynamic Google Maps route with real-time waypoint injection.
-- **HQ Dispatcher:** High-tech Leaflet map showing global fleet status and cargo integrity.
-- **Haptic/Visual Feedback:** Physical buzzer alarms on the ESP32 and UI toast notifications.
-- **Transparency Reports:** Exportable CSV logs for delivery audit trails.
+### ⚙️ Process (The "Intelligence Engine")
+1.  **Coordinate Homogenization:** The system normalizes raw GPS data from multiple sources into a standard `GeoJSON` format.
+2.  **Cold-Chain Integrity Check:** AI monitors the temperature slope; if the temperature exceeds 29°C or rises by more than 2°C in 5 minutes, an `ALERT_CARGO_SPOILAGE` event is triggered.
+3.  **Glide-Sync Reroute Logic:** 
+    - Analyzes `drive_time` since the last rest stop.
+    - If `drive_time > 4.5h`, the system automatically queries the `Stops` store for the nearest "Recommended" rest area.
+    - It then injects this stop as a waypoint into the Google Maps Directions Service to update the driver's active route.
+4.  **Persistent Syncing:** Utilizing **IndexedDB (GlideGoDB)**, the app implements an offline-first strategy. Local changes are queued and synced to the cloud whenever a heartbeat is detected.
+
+### 📤 Output (The "Actionable Insights")
+- **Dynamic Nav UI:** A real-time updating map for the driver with turn-by-turn waypoint injection.
+- **HQ Fleet Vision:** A global map for dispatchers showing all active trucks, their cargo health, and real-time transit status.
+- **Hardware Feedback:** 
+    - **Buzzer Alerts:** Physical audible alarms on the truck for temperature breaches or imminent stops.
+    - **OLED Status:** Real-time ETA and Temperature displayed on the ESP32 physical screen.
+- **Audit Trails:** Detailed CSV/JSON logs of every GPS ping and temperature fluctuation for insurance and compliance reports.
 
 ---
 
